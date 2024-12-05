@@ -1,29 +1,26 @@
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === "complete") {
-      groupTabsByDomain();
-    }
-  });
-  
-  chrome.tabs.onCreated.addListener(() => {
-    groupTabsByDomain();
-  });
-  
-  async function groupTabsByDomain() {
-    const tabs = await chrome.tabs.query({}); 
+function organizeTabs() {
+  browser.tabs.query({}).then((tabs) => {
     const groups = {};
-  
+
     tabs.forEach((tab) => {
       const url = new URL(tab.url);
       const domain = url.hostname;
-  
+
       if (!groups[domain]) {
         groups[domain] = [];
       }
       groups[domain].push(tab.id);
     });
-    
-    for (const domain in groups) {
-      await chrome.tabs.group({ tabIds: groups[domain] });
-    }
-  }
-  
+
+    Object.keys(groups).forEach((domain) => {
+      const tabIds = groups[domain];
+      if (tabIds.length > 1) {
+        browser.tabs.move(tabIds, { index: -1 }).then(() => {
+          console.log(`Groupé les onglets pour ${domain}`);
+        });
+      }
+    });
+  });
+}
+
+browser.tabs.onUpdated.addListener(organizeTabs);
